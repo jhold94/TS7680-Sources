@@ -30,57 +30,6 @@ static int twifd;
 
 #include "i2c-dev.h"
 
-int fpga_init(char *path, char adr)
-{
-	static int fd = -1;
-
-	if(fd != -1)
-		return fd;
-
-	if(path == NULL) {
-		// Will always be I2C0 on the 7680
-		fd = open("/dev/i2c-0", O_RDWR);
-	} else {
-		
-		fd = open(path, O_RDWR);
-	}
-
-	if(!adr) adr = 0x28;
-
-	if(fd != -1) {
-		if (ioctl(fd, I2C_SLAVE_FORCE, 0x28) < 0) {
-			perror("FPGA did not ACK 0x28\n");
-			return -1;
-		}
-	}
-
-	return fd;
-}
-
-void fpoke8(int twifd, uint16_t addr, uint8_t value)
-{
-	uint8_t data[3];
-	data[0] = ((addr >> 8) & 0xff);
-	data[1] = (addr & 0xff);
-	data[2] = value;
-	if (write(twifd, data, 3) != 3) {
-		perror("I2C Write Failed");
-	}
-}
-
-uint8_t fpeek8(int twifd, uint16_t addr)
-{
-	uint8_t data[2];
-	data[0] = ((addr >> 8) & 0xff);
-	data[1] = (addr & 0xff);
-	if (write(twifd, data, 2) != 2) {
-		perror("I2C Address set Failed");
-	}
-	read(twifd, data, 1);
-
-	return data[0];
-}
-
 int get_model()
 {
 	FILE *proc;
@@ -113,16 +62,10 @@ void usage(char **argv) {
 
 int main(int argc, char **argv) 
 {
-	int c, i;
+	int c;
 	uint16_t addr = 0x0;
 	int opt_addr = 0;
-	int opt_poke = 0, opt_peek = 0, opt_auto485 = -1;
-	int opt_set = 0, opt_get = 0, opt_dump = 0;
-	int opt_info = 0, opt_setmac = 0, opt_getmac = 0;
-	int opt_cputemp = 0, opt_modbuspoweron = 0, opt_modbuspoweroff = 0;
-	int opt_dac0 = 0, opt_dac1 = 0, opt_dac2 = 0, opt_dac3 = 0;
-	char *opt_mac = NULL;
-	int baud = 0;
+	int opt_poke = 0, opt_peek = 0;
 	int model;
 	uint8_t pokeval = 0;
 	char *uartmode = 0;
@@ -138,17 +81,6 @@ int main(int argc, char **argv)
 		{ "peekf", 1, 0, 't' },
 		{ 0, 0, 0, 0 }
 	};
-	model = get_model();
-	if(model == 0x7680) {
-		cbar_inputs = ts7680_inputs;
-		cbar_outputs = ts7680_outputs;
-		cbar_size = 6;
-		cbar_mask = 3;
-	} else {
-		fprintf(stderr, "Unsupported model TS-%X\n", model);
-		return 1;
-	}
-
 	while((c = getopt_long(argc, argv, "+m:v:t:",
 	  long_options, NULL)) != -1) {
 		switch(c) {
