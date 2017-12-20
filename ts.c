@@ -1,4 +1,4 @@
-//gcc -fno-tree-cselim -Wall -O0 -mcpu=arm9 -o ts tshwctl.c gpiolib.c fpga.c
+//gcc -fno-tree-cselim -Wall -O0 -mcpu=arm9 -o ts ts.c gpiolib.c fpga.c
 
 #include <stdio.h>
 #include <unistd.h>
